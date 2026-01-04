@@ -1,0 +1,21 @@
+{
+  "name": "focus-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon index.js",
+    "build": "",
+    "start": "",
+    "lint": ""
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongodb": "^7.0.0",
+    "mongoose": "^9.1.1",
+    "nodemon": "^3.1.11"
+  }
+}
