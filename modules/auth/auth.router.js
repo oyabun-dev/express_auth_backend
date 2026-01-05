@@ -1,7 +1,10 @@
 const express = require("express");
+const { login, register, verify2FA } = require("./auth.controller");
 const router = express.Router();
 
-router.get('/')
+router.get('/', (req, res) => {
+    res.send("Hello World!");
+})
 
 router.post('/login', login)
 router.post('/register', register)

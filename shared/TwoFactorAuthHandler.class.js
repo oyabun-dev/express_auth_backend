@@ -1,40 +1,44 @@
 const crypto = require("crypto");
 
 class TwoFactorAuthHandler {
-    constructor(twoFaCodes) {
-        this.twoFaCodes = twoFaCodes;
+    constructor() {
+        this.twoFactorMap = new Map();
     }
 
-    get(twoFaId) {
-        return this.twoFaCodes.get(twoFaId);
+    getMap() {
+        return this.twoFactorMap;
     }
 
-    exists(twoFaId) {
-        return this.twoFaCodes.has(twoFaId);
+    get(twoFactorId) {
+        return this.twoFactorMap.get(twoFactorId);
     }
 
-    isExpired(twoFaId) {
-        const twoFa = this.get(twoFaId);
-        return twoFa.expiresAt < Date.now();
+    exists(twoFactorId) {
+        return this.twoFactorMap.has(twoFactorId);
     }
 
-    isTooManyAttempts(twoFaId) {
-        const twoFa = this.get(twoFaId);
-        return twoFa.tries >= 3;
+    isExpired(twoFactorId) {
+        const twoFactor = this.get(twoFactorId);
+        return twoFactor.expiresAt < Date.now();
     }
 
-    isCodeValid(twoFaId, code) {
-        const twoFa = this.get(twoFaId);
-        return Number(twoFa?.code) === Number(code);
+    isTooManyAttempts(twoFactorId) {
+        const twoFactor = this.get(twoFactorId);
+        return twoFactor.tries >= 3;
     }
 
-    incrementAttempts(twoFaId) {
-        const twoFa = this.get(twoFaId);
-        twoFa.tries++;
+    isCodeValid(twoFactorId, code) {
+        const twoFactor = this.get(twoFactorId);
+        return Number(twoFactor?.code) === Number(code);
     }
 
-    delete(twoFaId) {
-        this.twoFaCodes.delete(twoFaId);
+    incrementAttempts(twoFactorId) {
+        const twoFactor = this.get(twoFactorId);
+        twoFactor.tries++;
+    }
+
+    delete(twoFactorId) {
+        this.twoFactorMap.delete(twoFactorId);
     }
 
     generate2FACode() {
@@ -44,6 +48,11 @@ class TwoFactorAuthHandler {
     generateUUID() {
         return crypto.randomUUID();
     }
+
+    setObject(twoFactorId, { email, code, tries, expiresAt }) {
+        this.twoFactorMap.set(twoFactorId, { email, code, tries, expiresAt });
+    }
+
 }
 
 module.exports = TwoFactorAuthHandler;

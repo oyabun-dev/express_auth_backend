@@ -1,13 +1,11 @@
 const bcrypt = require("bcrypt");
 
 class Encrypter {
-    constructor() {
-        this.salt = bcrypt.genSaltSync(10);
+    static hash(password) {
+        const salt = bcrypt.genSaltSync(10);
+        return bcrypt.hashSync(password, salt);
     }
-    hash(password) {
-        return bcrypt.hashSync(password, this.salt);
-    }
-    compare(password, hash) {
+    static compare(password, hash) {
         return bcrypt.compareSync(password, hash);
     }
 }

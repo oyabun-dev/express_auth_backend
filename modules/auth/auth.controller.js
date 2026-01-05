@@ -1,22 +1,13 @@
 const mongoose = require("mongoose");
-const User = require("./models/user.model");
-const bcrypt = require("bcrypt");
+const User = require("../../models/user.model");
 require("dotenv").config({ path: '.env.local' });
-const mongoUri = process.env.MONGODB_URI;
-
-const ErrorHandler = require("../shared/ErrorHandler.class");
-const TwoFactorAuthHandler = require("../shared/TwoFactorAuthHandler.class");
-const Encrypter = require("../shared/Encrypter.class");
-
-const connect = async () => {
-    try {
-        await mongoose.connect(mongoUri);
-    } catch (err) {
-        ErrorHandler.throw("🚫 Failed to connect to MongoDB", 500, "Database", err);
-    }
-}
 
 
+const ErrorHandler = require("../../shared/ErrorHandler.class");
+const TwoFactorAuthHandler = require("../../shared/TwoFactorAuthHandler.class");
+const Encrypter = require("../../shared/Encrypter.class");
+
+const twoFactorService = new TwoFactorAuthHandler();
 
 const login = async (req, res) => {
     try {
@@ -33,18 +24,20 @@ const login = async (req, res) => {
             ErrorHandler.throw("🔐 Invalid password", 401, "Login", null);
         }
 
-        const code = TwoFactorAuthHandler.generate2FACode();
-        const twoFaId = TwoFactorAuthHandler.generateUUID();
+        const code = twoFactorService.generate2FACode();
+        const twoFactorId = twoFactorService.generateUUID();
+        const twoFactorObject = { id: twoFactorId, email: email, code: code, tries: 0, expiresAt: Date.now() + 60 * 1000 };
 
-        twoFaCodes.set(twoFaId, { email: email, code: code, tries: 0, expiresAt: Date.now() + 60 * 1000 });
+        twoFactorService.setObject(twoFactorId, twoFactorObject);
 
-        console.log("[Login] 2FA code generated successfully");
-        return res.status(200).json({ message: "2FA code generated successfully", id: twoFaId });
+        console.log("[Login] 2FA code generated successfully", twoFactorObject.code);
+        return res.status(200).json({ message: "2FA code generated successfully", id: twoFactorId });
 
     } catch (err) {
         ErrorHandler.throw("🗄️ Internal Server Error", 500, "Login", err);
     }
 }
+
 
 const register = async (req, res) => {
     try {
@@ -62,35 +55,36 @@ const register = async (req, res) => {
     }
 }
 
+
 const verify2FA = async (req, res) => {
+    const { code, twoFactorId } = req.body;
 
-    const { code, twoFaId } = req.body;
-
-    if (!TwoFactorAuthHandler.exists(twoFaId)) {
+    if (!twoFactorService.exists(twoFactorId)) {
         ErrorHandler.throw("👀 2FA code not found", 404, "Verify2FA", null);
     }
 
-    if (TwoFactorAuthHandler.isExpired(twoFaId)) {
-        TwoFactorAuthHandler.delete(twoFaId);
+    if (twoFactorService.isExpired(twoFactorId)) {
+        twoFactorService.delete(twoFactorId);
         ErrorHandler.throw("⌛️ 2FA code expired", 400, "Verify2FA", null);
     }
 
-    if (TwoFactorAuthHandler.isTooManyAttempts(twoFaId)) {
-        TwoFactorAuthHandler.delete(twoFaId);
+    if (twoFactorService.isTooManyAttempts(twoFactorId)) {
+        twoFactorService.delete(twoFactorId);
         ErrorHandler.throw("🚫 Too many attempts", 400, "Verify2FA", null);
     }
 
-    if (!TwoFactorAuthHandler.isCodeValid(twoFaId, code)) {
-        TwoFactorAuthHandler.incrementAttempts(twoFaId);
+    if (!twoFactorService.isCodeValid(twoFactorId, code)) {
+        twoFactorService.incrementAttempts(twoFactorId);
         ErrorHandler.throw("🚫 Invalid 2FA code", 400, "Verify2FA", null);
     }
 
-    TwoFactorAuthHandler.delete(twoFaId);
+    twoFactorService.delete(twoFactorId);
 
     console.log("[Verify2FA] 2FA code verified successfully");
     return res.status(200).json({ message: "2FA code verified successfully" });
 
 }
+
 
 const authController = {
     login,

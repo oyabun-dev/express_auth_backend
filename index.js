@@ -1,45 +1,28 @@
 const express = require("express");
 const cors = require("cors");
-const crypto = require("crypto");
 const mongoose = require("mongoose");
-const User = require("./models/user.model");
-const bcrypt = require("bcrypt");
 require("dotenv").config({ path: '.env.local' });
 const app = express();
 const PORT = process.env.PORT || 4000;
-const mongoUri = process.env.MONGODB_URI;
-const authRouter = require("./modules/auth.router");
-
-const connect = async () => {
-
-}
+const authRouter = require("./modules/auth/auth.router");
+const ErrorHandler = require("./shared/ErrorHandler.class");
 
 // middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.listen(PORT, () => {
-    connect();
-    console.log(`[Server] ✅ Server running on port ${PORT}`);
-});
-
-const twoFaCodes = new Map();
+app.use("/auth", authRouter);
 
 
-app.get("/", (req, res) => {
-    res.send("Hello World!");
-});
+const connect = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        app.listen(PORT, () => {
+            console.log(`[Server] ✅ Server running on port ${PORT}`);
+        })
+    } catch (err) {
+        ErrorHandler.throw("🚫 Failed to connect to MongoDB", 500, "Database", err);
+    }
+}
 
-app.post("/login", async (req, res) => {
-
-});
-
-app.post("/verify-2fa", (req, res) => {
-
-});
-
-// add a user
-app.post("/register", (req, res) => {
-
-});
+connect();
