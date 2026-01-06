@@ -16,6 +16,7 @@ const login = async (req, res) => {
 
         if (!user) {
             ErrorHandler.throw("🥷🏽 User not found", 404, "Login", null);
+            
         }
 
         const isPasswordValid = Encrypter.compare(password, user.password);
@@ -84,7 +85,6 @@ const verify2FA = async (req, res) => {
     return res.status(200).json({ message: "2FA code verified successfully" });
 
 }
-
 
 const authController = {
     login,
