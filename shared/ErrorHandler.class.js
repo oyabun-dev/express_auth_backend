@@ -15,6 +15,11 @@ class ErrorHandler extends Error {
         ErrorHandler.log(message, origin, error);
         throw new ErrorHandler(message, statusCode, origin, error);
     }
+
+    static create(message, statusCode, origin, error) {
+        ErrorHandler.log(message, origin, error);
+        return new ErrorHandler(message, statusCode, origin, error);
+    }
 }
 
 module.exports = ErrorHandler;

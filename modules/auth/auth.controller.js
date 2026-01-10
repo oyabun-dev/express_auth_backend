@@ -5,22 +5,23 @@ require("dotenv").config({ path: '.env.local' });
 const ErrorHandler = require("../../shared/ErrorHandler.class");
 const TwoFactorAuthHandler = require("../../shared/TwoFactorAuthHandler.class");
 const Encrypter = require("../../shared/Encrypter.class");
+const errorMiddleware = require("../../middlewares/error.middleware");
 
 const twoFactorService = new TwoFactorAuthHandler();
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
 
         if (!user) {
-            ErrorHandler.throw("🥷🏽 User not found", 404, "Login", null);
+            return next(ErrorHandler.create("Invalid email", 404, "Login", null));
         }
 
         const isPasswordValid = Encrypter.compare(password, user.password);
 
         if (!isPasswordValid) {
-            ErrorHandler.throw("🔐 Invalid password", 401, "Login", null);
+            return next(ErrorHandler.create("Invalid password", 401, "Login", null));
         }
 
         const code = twoFactorService.generate2FACode();
@@ -33,7 +34,10 @@ const login = async (req, res) => {
         return res.status(200).json({ message: "2FA code generated successfully", id: twoFactorId });
 
     } catch (err) {
-        ErrorHandler.throw("🗄️ Internal Server Error", 500, "Login", err);
+        if (err instanceof ErrorHandler) {
+            return next(err);
+        }
+        return next(ErrorHandler.create("🗄️ Internal Server Error", 500, "Login", err));
     }
 }
 
@@ -49,32 +53,35 @@ const register = async (req, res) => {
         console.log("[Register] User created successfully");
         return res.status(200).json({ message: "User created successfully", user });
 
-    } catch (error) {
-        ErrorHandler.throw("🗄️ Internal Server Error", 500, "Register", error);
+    } catch (err) {
+        if (err instanceof ErrorHandler) {
+            return next(err);
+        }
+        return next(ErrorHandler.create("🗄️ Internal Server Error", 500, "Register", err));
     }
 }
 
 
-const verify2FA = async (req, res) => {
+const verify2FA = async (req, res, next) => {
     const { code, twoFactorId } = req.body;
 
     if (!twoFactorService.exists(twoFactorId)) {
-        ErrorHandler.throw("👀 2FA code not found", 404, "Verify2FA", null);
+        return next(ErrorHandler.create("👀 2FA code not found", 404, "Verify2FA", null));
     }
 
     if (twoFactorService.isExpired(twoFactorId)) {
         twoFactorService.delete(twoFactorId);
-        ErrorHandler.throw("⌛️ 2FA code expired", 400, "Verify2FA", null);
+        return next(ErrorHandler.create("⌛️ 2FA code expired", 400, "Verify2FA", null));
     }
 
     if (twoFactorService.isTooManyAttempts(twoFactorId)) {
         twoFactorService.delete(twoFactorId);
-        ErrorHandler.throw("🚫 Too many attempts", 400, "Verify2FA", null);
+        return next(ErrorHandler.create("🚫 Too many attempts", 400, "Verify2FA", null));
     }
 
     if (!twoFactorService.isCodeValid(twoFactorId, code)) {
         twoFactorService.incrementAttempts(twoFactorId);
-        ErrorHandler.throw("🚫 Invalid 2FA code", 400, "Verify2FA", null);
+        return next(ErrorHandler.create("🚫 Invalid 2FA code", 400, "Verify2FA", null));
     }
 
     twoFactorService.delete(twoFactorId);
