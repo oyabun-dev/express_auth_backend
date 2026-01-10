@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const User = require("../../models/user.model");
 require("dotenv").config({ path: '.env.local' });
 
@@ -16,7 +15,6 @@ const login = async (req, res) => {
 
         if (!user) {
             ErrorHandler.throw("🥷🏽 User not found", 404, "Login", null);
-            
         }
 
         const isPasswordValid = Encrypter.compare(password, user.password);

@@ -8,11 +8,10 @@ const authRouter = require("./modules/auth/auth.router");
 const ErrorHandler = require("./shared/ErrorHandler.class");
 
 // middlewares
-app.use(cors());
+app.use(cors({ origin: [process.env.FRONTEND_URL, "http://localhost:3000"] }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/auth", authRouter);
-
 
 const connect = async () => {
     try {
