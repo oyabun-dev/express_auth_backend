@@ -45,6 +45,12 @@ const login = async (req, res, next) => {
 const register = async (req, res) => {
     try {
         const { fullName, email, password } = req.body;
+        const userExists = await User.findOne({ email });
+
+        if (userExists) {
+            return next(ErrorHandler.create("User already exists", 409, "Register", null));
+        }
+
         const hashedPassword = Encrypter.hash(password);
 
         const user = new User({ fullName, email, password: hashedPassword });
